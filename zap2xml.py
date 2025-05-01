@@ -182,7 +182,7 @@ def main():
         sub_el(c_out, 'icon', src='https:' + c_in['thumbnail'][:-5])
 
     for c in d['channels']:
-      c_id = 'I%s.%s.zap2it.com' % (c['channelNo'], c['channelId'])
+      c_id = 'I%s.%s.gracenote.com' % (c['channelNo'], c['channelId'])
       for event in c['events']:
         prog_in = event['program']
         tm_start = tm_parse(event['startTime'])
