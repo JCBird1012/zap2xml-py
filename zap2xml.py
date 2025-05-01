@@ -125,7 +125,7 @@ def sub_el(parent, name, text=None, **kwargs):
 
 
 def main():
-  cache_dir = pathlib.Path(__file__).parent.joinpath('cache')
+  cache_dir = pathlib.Path.cwd().joinpath('cache')
   if not cache_dir.is_dir():
     cache_dir.mkdir()
 
@@ -143,8 +143,8 @@ def main():
   remove_stale_cache(cache_dir, zap_time)
 
   out = ET.Element('tv')
-  out.set('source-info-url', 'http://tvlistings.zap2it.com/')
-  out.set('source-info-name', 'zap2it.com')
+  out.set('source-info-url', 'http://tvlistings.gracenote.com/')
+  out.set('source-info-name', 'gracenote.com')
   out.set('generator-info-name', 'zap2xml.py')
   out.set('generator-info-url', 'github.com/arantius/zap2xml-py')
 
@@ -157,7 +157,7 @@ def main():
     qs = base_qs.copy()
     qs['lineupId'] = '%s-%s-DEFAULT' % (args.zap_country, args.zap_headendId)
     qs['time'] = i_time
-    url = 'https://tvlistings.zap2it.com/api/grid?'
+    url = 'https://tvlistings.gracenote.com/api/grid?'
     url += urllib.parse.urlencode(qs)
 
     result = get_cached(cache_dir, str(i_time), args.delay, url)
@@ -166,12 +166,20 @@ def main():
     if not done_channels:
       done_channels = True
       for c_in in d['channels']:
+        # <channel id="I2.86780.zap2it.com">
         c_out = sub_el(out, 'channel',
-            id='I%s.%s.zap2it.com' % (c_in['channelNo'], c_in['channelId']))
+            id='I%s.%s.gracenote.com' % (c_in['channelNo'], c_in['channelId']))
+        # <display-name>2 WDPNSD</display-name>
         sub_el(c_out, 'display-name',
             text='%s %s' % (c_in['channelNo'], c_in['callSign']))
+        # <display-name>2</display-name>
         sub_el(c_out, 'display-name', text=c_in['channelNo'])
+        # <display-name>WDPNSD</display-name>
         sub_el(c_out, 'display-name', text=c_in['callSign'])
+        # <display-name>ME TV NETWORK</display-name>
+        sub_el(c_out, 'display-name', text=c_in['affiliateName'])
+        # <icon src="//zap2it.tmsimg.com/h3/NowShowing/86780/s70436_h3_aa.png"></icon>
+        sub_el(c_out, 'icon', src='https:' + c_in['thumbnail'][:-5])
 
     for c in d['channels']:
       c_id = 'I%s.%s.zap2it.com' % (c['channelNo'], c['channelId'])
@@ -221,7 +229,10 @@ def main():
         for f in event['filter']:
           sub_el(prog_out, 'genre', lang='en', text=f[7:])
 
-  out_path = pathlib.Path(__file__).parent.joinpath('xmltv.xml')
+        if event['thumbnail']:
+          sub_el(prog_out, 'icon', src='https://zap2it.tmsimg.com/assets/' + event['thumbnail'] + '.jpg')
+
+  out_path = pathlib.Path.cwd().joinpath('xmltv.xml')
   with open(out_path.absolute(), 'wb') as f:
     f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
     f.write(ET.tostring(out, encoding='UTF-8'))
