@@ -198,8 +198,9 @@ def main():
     remove_stale_cache(cache_dir, zap_time)
 
     out = ET.Element("tv")
-    out.set("source-info-url", "http://tvlistings.gracenote.com/")
-    out.set("source-info-name", "gracenote.com")
+    API_ENDPOINT = 'https://tvlistings.gracenote.com'
+    out.set('source-info-url', API_ENDPOINT)
+    out.set('source-info-name', urllib.parse.urlparse(API_ENDPOINT).hostname)
     out.set("generator-info-name", "zap2xml.py")
     out.set("generator-info-url", "github.com/arantius/zap2xml-py")
 
@@ -212,7 +213,7 @@ def main():
         qs = base_qs.copy()
         qs["lineupId"] = "%s-%s-DEFAULT" % (args.zap_country, args.zap_headendId)
         qs["time"] = i_time
-        url = "https://tvlistings.gracenote.com/api/grid?"
+        url = f'{API_ENDPOINT}/api/grid?'
         url += urllib.parse.urlencode(qs)
 
         result = get_cached(cache_dir, str(i_time), args.delay, url)
@@ -225,7 +226,7 @@ def main():
                 c_out = sub_el(
                     out,
                     "channel",
-                    id="I%s.%s.gracenote.com" % (c_in["channelNo"], c_in["channelId"]),
+                    id="I%s.%s.%s" % (c_in["channelNo"], c_in["channelId"], urllib.parse.urlparse(API_ENDPOINT).hostname),
                 )
                 # <display-name>2 WDPNSD</display-name>
                 sub_el(
@@ -243,7 +244,7 @@ def main():
                 sub_el(c_out, "icon", src="https:" + c_in["thumbnail"][:-5])
 
         for c in d["channels"]:
-            c_id = "I%s.%s.gracenote.com" % (c["channelNo"], c["channelId"])
+            c_id = "I%s.%s.%s" % (c["channelNo"], c["channelId"], urllib.parse.urlparse(API_ENDPOINT).hostname)
             for event in c["events"]:
                 prog_in = event["program"]
                 tm_start = tm_parse(event["startTime"])
