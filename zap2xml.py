@@ -40,7 +40,7 @@ def get_args():
         "--aid",
         dest="zap_aid",
         type=str,
-        default="gapzap",
+        default="orbebb",
         help="Raw zap2it input parameter.  (Affiliate ID?)",
     )
     parser.add_argument(
@@ -123,11 +123,20 @@ def get_args():
         type=str,
         required=True,
         help="The zip/postal code identifying the listings to fetch.",
-    )
+    ),
+    parser.add_argument(
+        "-ua",
+        "--user-agent",
+        dest="userAgent",
+        type=str,
+        default="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+        required=False,
+        help="The User-Agent string to use for requests.",
+    ),
     return parser.parse_args()
 
 
-def get_cached(cache_dir, cache_key, delay, url):
+def get_cached(cache_dir, cache_key, delay, url, userAgent):
     cache_path = cache_dir.joinpath(cache_key)
     if cache_path.is_file():
         print("FROM CACHE:", url)
@@ -136,7 +145,9 @@ def get_cached(cache_dir, cache_key, delay, url):
     else:
         print("Fetching:  ", url)
         try:
-            resp = urllib.request.urlopen(url)
+            req = urllib.request.build_opener()
+            req.addheaders = [("User-Agent", userAgent)]
+            resp = req.open(url)
             result = resp.read()
         except urllib.error.HTTPError as e:
             if e.code == 400:
@@ -205,7 +216,7 @@ def main():
     out.set("generator-info-url", "github.com/arantius/zap2xml-py")
 
     # Fetch data in `zap_timespan` chunks.
-    for i in range(int(7 * 24 / args.zap_timespan)):
+    for i in range(int(8 * 24 / args.zap_timespan)):
         i_time = zap_time + (i * zap_time_window)
         i_dt = datetime.datetime.fromtimestamp(i_time)
         print("Getting data for", i_dt.isoformat())
@@ -216,7 +227,7 @@ def main():
         url = f'{API_ENDPOINT}/api/grid?'
         url += urllib.parse.urlencode(qs)
 
-        result = get_cached(cache_dir, str(i_time), args.delay, url)
+        result = get_cached(cache_dir, str(i_time), args.delay, url, args.userAgent)
         d = json.loads(result)
 
         if not done_channels:
